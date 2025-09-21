@@ -7,12 +7,45 @@ A simple GUI application to monitor Clevo laptop fan speed and CPU temperature.
 - Fan RPM display
 - Fan duty cycle percentage
 - Animated fan visualization that spins based on actual RPM
+- Battery power consumption monitoring
+- Service control for clevo-fancontrol and auto-cpufreq
+- Power profile switching with RyzenAdj (Battery/AC modes)
 
 ## Requirements
 - Python 3.6+
 - tkinter (python3-tk)
 - Pillow (PIL)
-- sudo access (required by clevo-fancontrol)
+- sudo access (required by system tools)
+
+## System Dependencies
+
+The following tools need to be installed for full functionality:
+
+### clevo-fancontrol
+Fan control for Clevo laptops
+- Repository: https://github.com/mmt050/clevo-fancontrol
+- Required for: Fan speed monitoring and control
+- Installation: Follow instructions in the repository
+
+### auto-cpufreq
+Automatic CPU speed & power optimizer for Linux
+- Repository: https://github.com/AdnanHodzic/auto-cpufreq
+- Required for: CPU frequency scaling and power management
+- Installation:
+  ```bash
+  # Via snap
+  sudo snap install auto-cpufreq
+
+  # Or via git
+  git clone https://github.com/AdnanHodzic/auto-cpufreq.git
+  cd auto-cpufreq && sudo ./auto-cpufreq-installer
+  ```
+
+### RyzenAdj
+Power management tool for AMD Ryzen processors
+- Repository: https://github.com/FlyGoat/RyzenAdj
+- Required for: Power limit adjustments (TDP control)
+- Installation: Download from releases or build from source
 
 ## Installation
 
