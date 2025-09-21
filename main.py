@@ -21,7 +21,7 @@ class FanMonitorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Pangolin 11 fan control")
-        self.root.geometry("450x620")
+        self.root.geometry("450x720")
 
         # Load or create fan image
         if not os.path.exists(FAN_IMAGE):
@@ -78,9 +78,38 @@ class FanMonitorApp:
                                   padx=10, pady=5)
         self.btn_stop.pack(side=tk.LEFT, padx=5)
 
-        # Separator for RyzenAdj section
+        # Separator for auto-cpufreq section
         separator2 = tk.Frame(root, height=2, bd=1, relief=tk.SUNKEN)
         separator2.pack(fill=tk.X, padx=5, pady=10)
+
+        # Auto-cpufreq section title
+        self.label_autocpufreq_title = tk.Label(root, text="auto-cpufreq Service", font=("Arial", 12, "bold"))
+        self.label_autocpufreq_title.pack(pady=5)
+
+        # Auto-cpufreq status label
+        self.label_autocpufreq_status = tk.Label(root, font=("Arial", 12), fg="green")
+        self.label_autocpufreq_status.pack(pady=5)
+
+        # Auto-cpufreq button frame
+        autocpufreq_frame = tk.Frame(root)
+        autocpufreq_frame.pack(pady=10)
+
+        # Start/Stop buttons for auto-cpufreq
+        self.btn_autocpufreq_start = tk.Button(autocpufreq_frame, text="Start Service",
+                                               command=self.start_autocpufreq_service,
+                                               font=("Arial", 10),
+                                               padx=10, pady=5)
+        self.btn_autocpufreq_start.pack(side=tk.LEFT, padx=5)
+
+        self.btn_autocpufreq_stop = tk.Button(autocpufreq_frame, text="Stop Service",
+                                              command=self.stop_autocpufreq_service,
+                                              font=("Arial", 10),
+                                              padx=10, pady=5)
+        self.btn_autocpufreq_stop.pack(side=tk.LEFT, padx=5)
+
+        # Separator for RyzenAdj section
+        separator3 = tk.Frame(root, height=2, bd=1, relief=tk.SUNKEN)
+        separator3.pack(fill=tk.X, padx=5, pady=10)
 
         # RyzenAdj section
         self.label_ryzenadj_title = tk.Label(root, text="RyzenAdj Power Control", font=("Arial", 12, "bold"))
@@ -113,6 +142,7 @@ class FanMonitorApp:
         # Start updating
         self.update()
         self.update_service_status()
+        self.update_autocpufreq_status()
         self.update_ryzenadj_status()
 
     def create_simple_fan_image(self, size=150, num_blades=7):
@@ -164,6 +194,19 @@ class FanMonitorApp:
             print(f"Error checking service status: {e}")
             return False
 
+    def check_autocpufreq_status(self):
+        """Check if auto-cpufreq service is running"""
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", "auto-cpufreq"],
+                capture_output=True,
+                text=True
+            )
+            return result.stdout.strip() == "active"
+        except Exception as e:
+            print(f"Error checking auto-cpufreq status: {e}")
+            return False
+
     def update_service_status(self):
         """Update service status label and button states"""
         is_running = self.check_service_status()
@@ -175,6 +218,18 @@ class FanMonitorApp:
             self.label_status.config(text="Status: Stopped", fg="red")
             self.btn_start.config(state=tk.NORMAL)
             self.btn_stop.config(state=tk.DISABLED)
+
+    def update_autocpufreq_status(self):
+        """Update auto-cpufreq service status label and button states"""
+        is_running = self.check_autocpufreq_status()
+        if is_running:
+            self.label_autocpufreq_status.config(text="Status: Running", fg="green")
+            self.btn_autocpufreq_start.config(state=tk.DISABLED)
+            self.btn_autocpufreq_stop.config(state=tk.NORMAL)
+        else:
+            self.label_autocpufreq_status.config(text="Status: Stopped", fg="red")
+            self.btn_autocpufreq_start.config(state=tk.NORMAL)
+            self.btn_autocpufreq_stop.config(state=tk.DISABLED)
 
     def start_service(self):
         """Start the clevo-fancontrol service"""
@@ -301,6 +356,38 @@ class FanMonitorApp:
                 tk.messagebox.showerror("Error", f"Failed to stop service: {result.stderr}")
         except Exception as e:
             tk.messagebox.showerror("Error", f"Error stopping service: {e}")
+
+    def start_autocpufreq_service(self):
+        """Start the auto-cpufreq service"""
+        try:
+            result = subprocess.run(
+                ["pkexec", "systemctl", "start", "auto-cpufreq"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                self.update_autocpufreq_status()
+                tk.messagebox.showinfo("Success", "auto-cpufreq service started successfully")
+            else:
+                tk.messagebox.showerror("Error", f"Failed to start auto-cpufreq service: {result.stderr}")
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Error starting auto-cpufreq service: {e}")
+
+    def stop_autocpufreq_service(self):
+        """Stop the auto-cpufreq service"""
+        try:
+            result = subprocess.run(
+                ["pkexec", "systemctl", "stop", "auto-cpufreq"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                self.update_autocpufreq_status()
+                tk.messagebox.showinfo("Success", "auto-cpufreq service stopped successfully")
+            else:
+                tk.messagebox.showerror("Error", f"Failed to stop auto-cpufreq service: {result.stderr}")
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Error stopping auto-cpufreq service: {e}")
 
     def get_battery_power(self):
         """Get battery power consumption in watts"""
@@ -431,6 +518,7 @@ class FanMonitorApp:
         self.status_counter += 1
         if self.status_counter >= 20:  # Update every 20 refresh cycles (about 1 second)
             self.update_service_status()
+            self.update_autocpufreq_status()
             self.update_ryzenadj_status()
             self.status_counter = 0
 
