@@ -21,7 +21,7 @@ class FanMonitorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Pangolin 11 fan control")
-        self.root.geometry("450x720")
+        self.root.geometry("400x800")
 
         # Load or create fan image
         if not os.path.exists(FAN_IMAGE):
@@ -29,6 +29,7 @@ class FanMonitorApp:
         self.original_fan = Image.open(FAN_IMAGE)
         self.angle = 0
         self.last_update_time = time.time()
+
 
         # Canvas for fan
         self.canvas = tk.Canvas(root, width=200, height=200, bg="white")
@@ -127,17 +128,25 @@ class FanMonitorApp:
         self.btn_ryzenadj_battery = tk.Button(ryzenadj_frame, text="Battery Mode\n(12W/8W, 80°C)",
                                               command=self.apply_battery_mode,
                                               font=("Arial", 10),
-                                              width=15,
-                                              padx=15, pady=10)
-        self.btn_ryzenadj_battery.pack(side=tk.LEFT, padx=5)
+                                              width=14,
+                                              padx=10, pady=10)
+        self.btn_ryzenadj_battery.pack(side=tk.LEFT, padx=3)
+
+        # Quiet mode button
+        self.btn_ryzenadj_quiet = tk.Button(ryzenadj_frame, text="Quiet Mode\n(20W/15W, 90°C)",
+                                           command=self.apply_quiet_mode,
+                                           font=("Arial", 10),
+                                           width=14,
+                                           padx=10, pady=10)
+        self.btn_ryzenadj_quiet.pack(side=tk.LEFT, padx=3)
 
         # AC/Performance mode button
-        self.btn_ryzenadj_ac = tk.Button(ryzenadj_frame, text="AC Mode\n(Default)",
+        self.btn_ryzenadj_ac = tk.Button(ryzenadj_frame, text="AC Mode\n(30W/20W, 98°C)",
                                          command=self.apply_ac_mode,
                                          font=("Arial", 10),
-                                         width=15,
-                                         padx=15, pady=10)
-        self.btn_ryzenadj_ac.pack(side=tk.LEFT, padx=5)
+                                         width=14,
+                                         padx=10, pady=10)
+        self.btn_ryzenadj_ac.pack(side=tk.LEFT, padx=3)
 
         # Start updating
         self.update()
@@ -269,10 +278,13 @@ class FanMonitorApp:
                     fast = float(fast_match.group(1))
                     slow = float(slow_match.group(1))
 
-                    # Battery mode: STAPM ~10W, Fast ~12W, Slow ~8W
-                    # AC mode: STAPM ~29W, Fast ~30W, Slow ~20W
-                    if stapm <= 15 and fast <= 15 and slow <= 10:
+                    # Battery mode: Fast ~12W, Slow ~8W
+                    # Quiet mode: Fast ~20W, Slow ~15W
+                    # AC mode: Fast ~30W, Slow ~20W
+                    if fast <= 15 and slow <= 10:
                         return "battery", stapm, fast, slow
+                    elif fast <= 22 and slow <= 17:
+                        return "quiet", stapm, fast, slow
                     else:
                         return "ac", stapm, fast, slow
 
@@ -291,6 +303,15 @@ class FanMonitorApp:
                 fg="blue"
             )
             self.btn_ryzenadj_battery.config(state=tk.DISABLED)
+            self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
+            self.btn_ryzenadj_ac.config(state=tk.NORMAL)
+        elif mode == "quiet":
+            self.label_ryzenadj_status.config(
+                text=f"Quiet Mode: {fast:.0f}W/{slow:.0f}W",
+                fg="orange"
+            )
+            self.btn_ryzenadj_battery.config(state=tk.NORMAL)
+            self.btn_ryzenadj_quiet.config(state=tk.DISABLED)
             self.btn_ryzenadj_ac.config(state=tk.NORMAL)
         elif mode == "ac":
             self.label_ryzenadj_status.config(
@@ -298,6 +319,7 @@ class FanMonitorApp:
                 fg="green"
             )
             self.btn_ryzenadj_battery.config(state=tk.NORMAL)
+            self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
             self.btn_ryzenadj_ac.config(state=tk.DISABLED)
         else:
             self.label_ryzenadj_status.config(
@@ -305,6 +327,7 @@ class FanMonitorApp:
                 fg="gray"
             )
             self.btn_ryzenadj_battery.config(state=tk.NORMAL)
+            self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
             self.btn_ryzenadj_ac.config(state=tk.NORMAL)
 
     def apply_battery_mode(self):
@@ -323,6 +346,23 @@ class FanMonitorApp:
                 tk.messagebox.showerror("Error", f"Failed to apply battery mode: {result.stderr}")
         except Exception as e:
             tk.messagebox.showerror("Error", f"Error applying battery mode: {e}")
+
+    def apply_quiet_mode(self):
+        """Apply quiet mode settings - intermediate between battery and AC"""
+        try:
+            # Apply quiet mode: slow-limit=15W, fast-limit=20W, tctl-temp=90°C
+            result = subprocess.run(
+                ["pkexec", "/usr/bin/ryzenadj", "--slow-limit=15000", "--fast-limit=20000", "--tctl-temp=90"],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                self.update_ryzenadj_status()
+                tk.messagebox.showinfo("Success", "Quiet mode applied (20W fast, 15W slow, 90°C limit)")
+            else:
+                tk.messagebox.showerror("Error", f"Failed to apply quiet mode: {result.stderr}")
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Error applying quiet mode: {e}")
 
     def apply_ac_mode(self):
         """Reset to AC/default mode settings"""
@@ -389,6 +429,7 @@ class FanMonitorApp:
         except Exception as e:
             tk.messagebox.showerror("Error", f"Error stopping auto-cpufreq service: {e}")
 
+
     def get_battery_power(self):
         """Get battery power consumption in watts"""
         try:
@@ -445,12 +486,6 @@ class FanMonitorApp:
                 rpms = int(rpms_match.group(1)) if rpms_match else 0
                 temp = int(temp_match.group(1)) if temp_match else 0
 
-                # Sanity checks for obviously wrong values
-                if temp > 150:  # 224°C is clearly wrong
-                    temp = 0
-                if rpms > 10000:  # Most laptop fans max out around 5000-6000 RPM
-                    rpms = 0
-
                 return temp, rpms, duty
 
             return data.get("cpu_temp_cels", 0), data.get("rpms", 0), data.get("duty", 0)
@@ -463,6 +498,7 @@ class FanMonitorApp:
 
     def update(self):
         temp, rpm, duty = self.get_sensor_values()
+
         power_w, battery_status = self.get_battery_power()
 
         # Update labels
