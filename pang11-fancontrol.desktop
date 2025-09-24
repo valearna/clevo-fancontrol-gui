@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pangolin 11 Power Control
+Comment=Comprehensive power management for Pangolin 11 laptop - fan control, CPU scaling, and power profiles
+Icon=pang11-fancontrol
+Exec=/home/valerio/workspace/generic/pang11_power_control/launch.sh
+Terminal=false
+Categories=System;Settings;HardwareSettings;
+Keywords=fan;temperature;cpu;cooling;pang11;pangolin;laptop;power;ryzen;frequency;
+StartupNotify=true
+StartupWMClass=pang11-fancontrol
+Path=/home/valerio/workspace/generic/pang11_power_control

@@ -20,7 +20,7 @@ def main():
             else:
                 # Running from GUI - use a different approach
                 # Create a script that pkexec can run
-                temp_script = f'/tmp/clevo-launcher-{os.getpid()}.sh'
+                temp_script = f'/tmp/pang11-launcher-{os.getpid()}.sh'
                 with open(temp_script, 'w') as f:
                     f.write(f'''#!/bin/bash
 export DISPLAY="{display}"
@@ -53,6 +53,12 @@ python3 "{main_script}"
         main_module = importlib.util.module_from_spec(spec)
         sys.modules["main"] = main_module
         spec.loader.exec_module(main_module)
+
+        # Since __name__ != "__main__" when imported as module, manually start the GUI
+        import tkinter as tk
+        root = tk.Tk()
+        app = main_module.FanMonitorApp(root)
+        root.mainloop()
 
 if __name__ == "__main__":
     main()

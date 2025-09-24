@@ -1,6 +1,6 @@
 import subprocess
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 import json
 import os
 import time
@@ -15,13 +15,36 @@ import math
 FAN_IMAGE = "fan.png"
 
 # How often to refresh values (ms)
-REFRESH_INTERVAL = 50  # 20 FPS for smooth animation  
+REFRESH_INTERVAL = 50  # 20 FPS for smooth animation
+
+# Modern blue-focused color scheme
+COLORS = {
+    'bg_primary': '#0d1117',      # Deep blue-black background
+    'bg_secondary': '#161b22',    # Blue-tinted secondary background
+    'bg_tertiary': '#21262d',     # Blue-tinted cards
+    'accent_blue': '#58a6ff',     # Bright blue accent
+    'accent_blue_dark': '#1f6feb', # Darker blue for buttons
+    'accent_green': '#3fb950',    # Success green with blue tint
+    'accent_orange': '#f85149',   # Warning orange-red
+    'accent_red': '#f85149',      # Error red
+    'text_primary': '#f0f6fc',    # Primary text with blue tint
+    'text_secondary': '#8b949e',  # Secondary text
+    'border': '#30363d',          # Blue-tinted border
+    'hover': '#30363d'            # Hover state
+}
 
 class FanMonitorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Pangolin 11 fan control")
-        self.root.geometry("400x800")
+        self.root.title("Pangolin 11 Fan Control")
+        self.root.geometry("480x950")
+        self.root.configure(bg=COLORS['bg_primary'])
+        self.root.resizable(False, False)
+
+        # Configure ttk style for modern appearance
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        self.configure_styles()
 
         # Load or create fan image
         if not os.path.exists(FAN_IMAGE):
@@ -30,123 +53,224 @@ class FanMonitorApp:
         self.angle = 0
         self.last_update_time = time.time()
 
+        self.create_ui()
 
-        # Canvas for fan
-        self.canvas = tk.Canvas(root, width=200, height=200, bg="white")
-        self.canvas.pack(padx=10, pady=10)
+    def configure_styles(self):
+        """Configure modern ttk styles with better contrast and readability"""
+        # Softer, more readable button colors
+        button_colors = {
+            'modern_bg': '#2d4a6b',        # Softer blue
+            'modern_hover': '#3d5a7b',     # Slightly lighter blue
+            'success_bg': '#1f5f3f',       # Softer green
+            'success_hover': '#2f6f4f',    # Lighter green
+            'warning_bg': '#7d3c2a',       # Softer orange-red
+            'warning_hover': '#8d4c3a',    # Lighter orange-red
+            'danger_bg': '#7d2a2a',        # Softer red
+            'danger_hover': '#8d3a3a',     # Lighter red
+        }
+
+        # Configure button styles with better readability
+        self.style.configure('Modern.TButton',
+                           background=button_colors['modern_bg'],
+                           foreground='#ffffff',
+                           borderwidth=1,
+                           relief='flat',
+                           focuscolor='none',
+                           font=('Segoe UI', 10))
+
+        self.style.map('Modern.TButton',
+                      background=[('active', button_colors['modern_hover']),
+                                ('pressed', button_colors['modern_bg']),
+                                ('disabled', COLORS['bg_secondary'])],
+                      foreground=[('disabled', COLORS['text_secondary'])])
+
+        self.style.configure('Success.TButton',
+                           background=button_colors['success_bg'],
+                           foreground='#ffffff',
+                           borderwidth=1,
+                           relief='flat',
+                           focuscolor='none',
+                           font=('Segoe UI', 10))
+
+        self.style.map('Success.TButton',
+                      background=[('active', button_colors['success_hover']),
+                                ('pressed', button_colors['success_bg']),
+                                ('disabled', COLORS['bg_secondary'])],
+                      foreground=[('disabled', COLORS['text_secondary'])])
+
+        self.style.configure('Warning.TButton',
+                           background=button_colors['warning_bg'],
+                           foreground='#ffffff',
+                           borderwidth=1,
+                           relief='flat',
+                           focuscolor='none',
+                           font=('Segoe UI', 10))
+
+        self.style.map('Warning.TButton',
+                      background=[('active', button_colors['warning_hover']),
+                                ('pressed', button_colors['warning_bg']),
+                                ('disabled', COLORS['bg_secondary'])],
+                      foreground=[('disabled', COLORS['text_secondary'])])
+
+        self.style.configure('Danger.TButton',
+                           background=button_colors['danger_bg'],
+                           foreground='#ffffff',
+                           borderwidth=1,
+                           relief='flat',
+                           focuscolor='none',
+                           font=('Segoe UI', 10))
+
+        self.style.map('Danger.TButton',
+                      background=[('active', button_colors['danger_hover']),
+                                ('pressed', button_colors['danger_bg']),
+                                ('disabled', COLORS['bg_secondary'])],
+                      foreground=[('disabled', COLORS['text_secondary'])])
+
+    def create_card_frame(self, parent, title=None):
+        """Create a modern card-style frame"""
+        card = tk.Frame(parent, bg=COLORS['bg_tertiary'], relief='flat', bd=1)
+        card.pack(fill='x', padx=20, pady=8)
+
+        if title:
+            title_label = tk.Label(card, text=title,
+                                 font=('Segoe UI', 12, 'bold'),
+                                 bg=COLORS['bg_tertiary'],
+                                 fg=COLORS['text_primary'])
+            title_label.pack(pady=(12, 8))
+
+        return card
+
+    def create_ui(self):
+        """Create the main UI components"""
+        # Main title
+        title_frame = tk.Frame(self.root, bg=COLORS['bg_primary'])
+        title_frame.pack(fill='x', pady=(20, 10))
+
+        title_label = tk.Label(title_frame, text="🌪️ Pangolin 11 Fan Control",
+                             font=('Segoe UI', 16, 'bold'),
+                             bg=COLORS['bg_primary'],
+                             fg=COLORS['text_primary'])
+        title_label.pack()
+
+        # Fan visualization card
+        fan_card = self.create_card_frame(self.root, "Fan Status")
+
+        # Canvas for fan with modern styling - compact
+        self.canvas = tk.Canvas(fan_card, width=120, height=120,
+                              bg=COLORS['bg_secondary'],
+                              highlightthickness=0)
+        self.canvas.pack(padx=15, pady=(5, 5))
         self.fan_image = None
 
-        # Labels
-        self.label_temp = tk.Label(root, font=("Arial", 14))
-        self.label_temp.pack()
-        self.label_rpm = tk.Label(root, font=("Arial", 14))
-        self.label_rpm.pack()
-        self.label_duty = tk.Label(root, font=("Arial", 14))
-        self.label_duty.pack()
+        # System metrics in the fan card - compact
+        metrics_frame = tk.Frame(fan_card, bg=COLORS['bg_tertiary'])
+        metrics_frame.pack(pady=(0, 10))
 
-        # Power consumption labels
-        self.label_power = tk.Label(root, font=("Arial", 14))
-        self.label_power.pack()
-        self.label_battery_status = tk.Label(root, font=("Arial", 12))
-        self.label_battery_status.pack()
+        self.label_temp = tk.Label(metrics_frame, font=("Segoe UI", 11),
+                                 bg=COLORS['bg_tertiary'], fg=COLORS['text_primary'])
+        self.label_temp.pack(pady=1)
 
-        # Separator for clevo-fancontrol section
-        separator1 = tk.Frame(root, height=2, bd=1, relief=tk.SUNKEN)
-        separator1.pack(fill=tk.X, padx=5, pady=10)
+        self.label_rpm = tk.Label(metrics_frame, font=("Segoe UI", 11),
+                                bg=COLORS['bg_tertiary'], fg=COLORS['text_primary'])
+        self.label_rpm.pack(pady=1)
 
-        # Clevo-fancontrol section title
-        self.label_clevo_title = tk.Label(root, text="clevo-fancontrol Service", font=("Arial", 12, "bold"))
-        self.label_clevo_title.pack(pady=5)
+        self.label_duty = tk.Label(metrics_frame, font=("Segoe UI", 11),
+                                 bg=COLORS['bg_tertiary'], fg=COLORS['text_primary'])
+        self.label_duty.pack(pady=1)
 
-        # Service status label
-        self.label_status = tk.Label(root, font=("Arial", 12), fg="green")
-        self.label_status.pack(pady=5)
+        # Power consumption card - compact
+        power_card = self.create_card_frame(self.root, "⚡ Power Status")
+        power_metrics = tk.Frame(power_card, bg=COLORS['bg_tertiary'])
+        power_metrics.pack(pady=(0, 10))
 
-        # Button frame
-        button_frame = tk.Frame(root)
-        button_frame.pack(pady=10)
+        self.label_power = tk.Label(power_metrics, font=("Segoe UI", 11),
+                                  bg=COLORS['bg_tertiary'], fg=COLORS['text_primary'])
+        self.label_power.pack(pady=1)
 
-        # Start/Stop buttons
-        self.btn_start = tk.Button(button_frame, text="Start Service",
+        self.label_battery_status = tk.Label(power_metrics, font=("Segoe UI", 10),
+                                           bg=COLORS['bg_tertiary'], fg=COLORS['text_secondary'])
+        self.label_battery_status.pack(pady=1)
+
+        # Clevo-fancontrol service card
+        clevo_card = self.create_card_frame(self.root, "🔧 Clevo Fan Control Service")
+
+        self.label_status = tk.Label(clevo_card, font=("Segoe UI", 11),
+                                   bg=COLORS['bg_tertiary'])
+        self.label_status.pack(pady=(0, 10))
+
+        clevo_button_frame = tk.Frame(clevo_card, bg=COLORS['bg_tertiary'])
+        clevo_button_frame.pack(pady=(0, 12))
+
+        self.btn_start = ttk.Button(clevo_button_frame, text="▶ Start",
                                    command=self.start_service,
-                                   font=("Arial", 10),
-                                   padx=10, pady=5)
+                                   style='Success.TButton',
+                                   width=12)
         self.btn_start.pack(side=tk.LEFT, padx=5)
 
-        self.btn_stop = tk.Button(button_frame, text="Stop Service",
+        self.btn_stop = ttk.Button(clevo_button_frame, text="⏹ Stop",
                                   command=self.stop_service,
-                                  font=("Arial", 10),
-                                  padx=10, pady=5)
+                                  style='Danger.TButton',
+                                  width=12)
         self.btn_stop.pack(side=tk.LEFT, padx=5)
 
-        # Separator for auto-cpufreq section
-        separator2 = tk.Frame(root, height=2, bd=1, relief=tk.SUNKEN)
-        separator2.pack(fill=tk.X, padx=5, pady=10)
+        # Auto-cpufreq service card
+        autocpufreq_card = self.create_card_frame(self.root, "⚙️ Auto-CPUFreq Service")
 
-        # Auto-cpufreq section title
-        self.label_autocpufreq_title = tk.Label(root, text="auto-cpufreq Service", font=("Arial", 12, "bold"))
-        self.label_autocpufreq_title.pack(pady=5)
+        self.label_autocpufreq_status = tk.Label(autocpufreq_card, font=("Segoe UI", 11),
+                                               bg=COLORS['bg_tertiary'])
+        self.label_autocpufreq_status.pack(pady=(0, 10))
 
-        # Auto-cpufreq status label
-        self.label_autocpufreq_status = tk.Label(root, font=("Arial", 12), fg="green")
-        self.label_autocpufreq_status.pack(pady=5)
+        autocpufreq_button_frame = tk.Frame(autocpufreq_card, bg=COLORS['bg_tertiary'])
+        autocpufreq_button_frame.pack(pady=(0, 12))
 
-        # Auto-cpufreq button frame
-        autocpufreq_frame = tk.Frame(root)
-        autocpufreq_frame.pack(pady=10)
-
-        # Start/Stop buttons for auto-cpufreq
-        self.btn_autocpufreq_start = tk.Button(autocpufreq_frame, text="Start Service",
+        self.btn_autocpufreq_start = ttk.Button(autocpufreq_button_frame, text="▶ Start",
                                                command=self.start_autocpufreq_service,
-                                               font=("Arial", 10),
-                                               padx=10, pady=5)
+                                               style='Success.TButton',
+                                               width=12)
         self.btn_autocpufreq_start.pack(side=tk.LEFT, padx=5)
 
-        self.btn_autocpufreq_stop = tk.Button(autocpufreq_frame, text="Stop Service",
+        self.btn_autocpufreq_stop = ttk.Button(autocpufreq_button_frame, text="⏹ Stop",
                                               command=self.stop_autocpufreq_service,
-                                              font=("Arial", 10),
-                                              padx=10, pady=5)
+                                              style='Danger.TButton',
+                                              width=12)
         self.btn_autocpufreq_stop.pack(side=tk.LEFT, padx=5)
 
-        # Separator for RyzenAdj section
-        separator3 = tk.Frame(root, height=2, bd=1, relief=tk.SUNKEN)
-        separator3.pack(fill=tk.X, padx=5, pady=10)
+        # RyzenAdj power control card
+        ryzenadj_card = self.create_card_frame(self.root, "🔋 RyzenAdj Power Control")
 
-        # RyzenAdj section
-        self.label_ryzenadj_title = tk.Label(root, text="RyzenAdj Power Control", font=("Arial", 12, "bold"))
-        self.label_ryzenadj_title.pack(pady=5)
+        self.label_ryzenadj_status = tk.Label(ryzenadj_card, font=("Segoe UI", 11),
+                                            bg=COLORS['bg_tertiary'])
+        self.label_ryzenadj_status.pack(pady=(0, 15))
 
-        # RyzenAdj status label
-        self.label_ryzenadj_status = tk.Label(root, font=("Arial", 11))
-        self.label_ryzenadj_status.pack(pady=5)
+        # Power mode buttons in a grid
+        ryzenadj_button_container = tk.Frame(ryzenadj_card, bg=COLORS['bg_tertiary'])
+        ryzenadj_button_container.pack(pady=(0, 12))
 
-        # RyzenAdj button frame
-        ryzenadj_frame = tk.Frame(root)
-        ryzenadj_frame.pack(pady=5)
+        # Top row with Battery and Quiet modes
+        top_row = tk.Frame(ryzenadj_button_container, bg=COLORS['bg_tertiary'])
+        top_row.pack(pady=5)
 
-        # Battery/Power-saving mode button
-        self.btn_ryzenadj_battery = tk.Button(ryzenadj_frame, text="Battery Mode\n(12W/8W, 80°C)",
+        self.btn_ryzenadj_battery = ttk.Button(top_row, text="🔋 Battery Mode\n12W/8W • 80°C",
                                               command=self.apply_battery_mode,
-                                              font=("Arial", 10),
-                                              width=14,
-                                              padx=10, pady=10)
-        self.btn_ryzenadj_battery.pack(side=tk.LEFT, padx=3)
+                                              style='Modern.TButton',
+                                              width=18)
+        self.btn_ryzenadj_battery.pack(side=tk.LEFT, padx=5)
 
-        # Quiet mode button
-        self.btn_ryzenadj_quiet = tk.Button(ryzenadj_frame, text="Quiet Mode\n(20W/15W, 90°C)",
+        self.btn_ryzenadj_quiet = ttk.Button(top_row, text="🔇 Quiet Mode\n20W/15W • 90°C",
                                            command=self.apply_quiet_mode,
-                                           font=("Arial", 10),
-                                           width=14,
-                                           padx=10, pady=10)
-        self.btn_ryzenadj_quiet.pack(side=tk.LEFT, padx=3)
+                                           style='Warning.TButton',
+                                           width=18)
+        self.btn_ryzenadj_quiet.pack(side=tk.LEFT, padx=5)
 
-        # AC/Performance mode button
-        self.btn_ryzenadj_ac = tk.Button(ryzenadj_frame, text="AC Mode\n(30W/20W, 98°C)",
+        # Bottom row with AC mode (centered)
+        bottom_row = tk.Frame(ryzenadj_button_container, bg=COLORS['bg_tertiary'])
+        bottom_row.pack(pady=5)
+
+        self.btn_ryzenadj_ac = ttk.Button(bottom_row, text="⚡ Performance Mode\n30W/20W • 98°C",
                                          command=self.apply_ac_mode,
-                                         font=("Arial", 10),
-                                         width=14,
-                                         padx=10, pady=10)
-        self.btn_ryzenadj_ac.pack(side=tk.LEFT, padx=3)
+                                         style='Success.TButton',
+                                         width=18)
+        self.btn_ryzenadj_ac.pack()
 
         # Start updating
         self.update()
@@ -154,25 +278,31 @@ class FanMonitorApp:
         self.update_autocpufreq_status()
         self.update_ryzenadj_status()
 
-    def create_simple_fan_image(self, size=150, num_blades=7):
-        """Create a simple fan image if none exists"""
+    def create_simple_fan_image(self, size=100, num_blades=7):
+        """Create a simple fan image that blends with the blue UI theme"""
         img = Image.new('RGBA', (size, size), (255, 255, 255, 0))
         draw = ImageDraw.Draw(img)
 
         center_x = size // 2
         center_y = size // 2
-        radius = size // 2 - 10
+        radius = size // 2 - 8
 
-        # Draw outer circle
-        draw.ellipse([10, 10, size-10, size-10], outline=(50, 50, 50), width=3)
+        # Blue-tinted colors that blend with the UI
+        outline_color = (88, 166, 255)     # accent_blue
+        blade_color = (71, 135, 204)       # Darker blue
+        center_color = (31, 111, 235)      # accent_blue_dark
+        inner_center = (48, 54, 61)        # bg_tertiary
+
+        # Draw outer circle with blue tint
+        draw.ellipse([8, 8, size-8, size-8], outline=outline_color, width=3)
 
         # Draw center circle
         center_radius = size // 8
         draw.ellipse([center_x - center_radius, center_y - center_radius,
                       center_x + center_radius, center_y + center_radius],
-                     fill=(100, 100, 100))
+                     fill=center_color)
 
-        # Draw fan blades
+        # Draw fan blades with blue tint
         for i in range(num_blades):
             angle = (2 * math.pi * i) / num_blades
             start_angle = math.degrees(angle) - 15
@@ -180,13 +310,13 @@ class FanMonitorApp:
             draw.pieslice([center_x - radius + 5, center_y - radius + 5,
                            center_x + radius - 5, center_y + radius - 5],
                           start=start_angle, end=end_angle,
-                          fill=(80, 80, 80))
+                          fill=blade_color)
 
         # Draw smaller center circle
         inner_radius = size // 12
         draw.ellipse([center_x - inner_radius, center_y - inner_radius,
                       center_x + inner_radius, center_y + inner_radius],
-                     fill=(60, 60, 60))
+                     fill=inner_center)
 
         img.save(FAN_IMAGE)
 
@@ -220,11 +350,11 @@ class FanMonitorApp:
         """Update service status label and button states"""
         is_running = self.check_service_status()
         if is_running:
-            self.label_status.config(text="Status: Running", fg="green")
+            self.label_status.config(text="✅ Service Running", fg=COLORS['accent_green'])
             self.btn_start.config(state=tk.DISABLED)
             self.btn_stop.config(state=tk.NORMAL)
         else:
-            self.label_status.config(text="Status: Stopped", fg="red")
+            self.label_status.config(text="❌ Service Stopped", fg=COLORS['accent_red'])
             self.btn_start.config(state=tk.NORMAL)
             self.btn_stop.config(state=tk.DISABLED)
 
@@ -232,11 +362,11 @@ class FanMonitorApp:
         """Update auto-cpufreq service status label and button states"""
         is_running = self.check_autocpufreq_status()
         if is_running:
-            self.label_autocpufreq_status.config(text="Status: Running", fg="green")
+            self.label_autocpufreq_status.config(text="✅ Service Running", fg=COLORS['accent_green'])
             self.btn_autocpufreq_start.config(state=tk.DISABLED)
             self.btn_autocpufreq_stop.config(state=tk.NORMAL)
         else:
-            self.label_autocpufreq_status.config(text="Status: Stopped", fg="red")
+            self.label_autocpufreq_status.config(text="❌ Service Stopped", fg=COLORS['accent_red'])
             self.btn_autocpufreq_start.config(state=tk.NORMAL)
             self.btn_autocpufreq_stop.config(state=tk.DISABLED)
 
@@ -299,32 +429,32 @@ class FanMonitorApp:
 
         if mode == "battery":
             self.label_ryzenadj_status.config(
-                text=f"Battery Mode: {fast:.0f}W/{slow:.0f}W",
-                fg="blue"
+                text=f"🔋 Battery Mode Active • {fast:.0f}W/{slow:.0f}W",
+                fg=COLORS['accent_blue']
             )
             self.btn_ryzenadj_battery.config(state=tk.DISABLED)
             self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
             self.btn_ryzenadj_ac.config(state=tk.NORMAL)
         elif mode == "quiet":
             self.label_ryzenadj_status.config(
-                text=f"Quiet Mode: {fast:.0f}W/{slow:.0f}W",
-                fg="orange"
+                text=f"🔇 Quiet Mode Active • {fast:.0f}W/{slow:.0f}W",
+                fg=COLORS['accent_orange']
             )
             self.btn_ryzenadj_battery.config(state=tk.NORMAL)
             self.btn_ryzenadj_quiet.config(state=tk.DISABLED)
             self.btn_ryzenadj_ac.config(state=tk.NORMAL)
         elif mode == "ac":
             self.label_ryzenadj_status.config(
-                text=f"AC Mode: {fast:.0f}W/{slow:.0f}W",
-                fg="green"
+                text=f"⚡ Performance Mode Active • {fast:.0f}W/{slow:.0f}W",
+                fg=COLORS['accent_green']
             )
             self.btn_ryzenadj_battery.config(state=tk.NORMAL)
             self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
             self.btn_ryzenadj_ac.config(state=tk.DISABLED)
         else:
             self.label_ryzenadj_status.config(
-                text="Mode: Unknown",
-                fg="gray"
+                text="❓ Power Mode Unknown",
+                fg=COLORS['text_secondary']
             )
             self.btn_ryzenadj_battery.config(state=tk.NORMAL)
             self.btn_ryzenadj_quiet.config(state=tk.NORMAL)
@@ -501,21 +631,21 @@ class FanMonitorApp:
 
         power_w, battery_status = self.get_battery_power()
 
-        # Update labels
-        self.label_temp.config(text=f"CPU Temp: {temp} °C")
-        self.label_rpm.config(text=f"Fan Speed: {rpm} RPM")
-        self.label_duty.config(text=f"Fan Duty: {duty}%")
+        # Update labels with modern styling
+        self.label_temp.config(text=f"🌡️ CPU Temperature: {temp}°C")
+        self.label_rpm.config(text=f"🌪️ Fan Speed: {rpm} RPM")
+        self.label_duty.config(text=f"⚙️ Fan Duty: {duty}%")
 
-        # Update power consumption labels
+        # Update power consumption labels with modern styling
         if battery_status == "Discharging":
-            self.label_power.config(text=f"Power Draw: {power_w:.2f} W")
-            self.label_battery_status.config(text=f"Battery: {battery_status}", fg="orange")
+            self.label_power.config(text=f"🔋 Battery Draw: {power_w:.2f} W")
+            self.label_battery_status.config(text=f"Status: {battery_status}", fg=COLORS['accent_orange'])
         elif battery_status == "Charging":
-            self.label_power.config(text=f"Charging: {power_w:.2f} W")
-            self.label_battery_status.config(text=f"Battery: {battery_status}", fg="green")
+            self.label_power.config(text=f"🔌 Charging: {power_w:.2f} W")
+            self.label_battery_status.config(text=f"Status: {battery_status}", fg=COLORS['accent_green'])
         else:
-            self.label_power.config(text=f"Power: {power_w:.2f} W")
-            self.label_battery_status.config(text=f"Battery: {battery_status}", fg="blue")
+            self.label_power.config(text=f"⚡ Power: {power_w:.2f} W")
+            self.label_battery_status.config(text=f"Status: {battery_status}", fg=COLORS['accent_blue'])
 
         # Clear canvas before redrawing
         self.canvas.delete("all")
@@ -546,7 +676,7 @@ class FanMonitorApp:
             # Fall back to older PIL version
             rotated = self.original_fan.rotate(-self.angle, resample=Image.BICUBIC)
         self.fan_image = ImageTk.PhotoImage(rotated)
-        self.canvas.create_image(100, 100, image=self.fan_image)
+        self.canvas.create_image(60, 60, image=self.fan_image)
 
         # Update service status periodically (less frequently than sensor data)
         if not hasattr(self, 'status_counter'):
