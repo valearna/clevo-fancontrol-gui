@@ -22,23 +22,23 @@ mkdir -p "$DESKTOP_DIR"
 
 # Copy the application files
 echo "Copying application files..."
-cp "$SCRIPT_DIR/clevo-fancontrol-gui" "$INSTALL_DIR/"
-cp "$SCRIPT_DIR/main.py" "$INSTALL_DIR/clevo-fancontrol-main.py"
+cp "$SCRIPT_DIR/pang11-fancontrol-gui" "$INSTALL_DIR/"
+cp "$SCRIPT_DIR/main.py" "$INSTALL_DIR/pang11-fancontrol-main.py"
 cp "$SCRIPT_DIR/fan.png" "$INSTALL_DIR/"
 
 # Copy icon
 echo "Installing icon..."
-cp "$SCRIPT_DIR/fan.png" "$ICON_DIR/clevo-fancontrol.png"
+cp "$SCRIPT_DIR/fan.png" "$ICON_DIR/pang11-fancontrol.png"
 
 # Update the wrapper script to point to the installed location
-sed -i "s|main_script = os.path.join(script_dir, \"main.py\")|main_script = os.path.join(script_dir, \"clevo-fancontrol-main.py\")|" "$INSTALL_DIR/clevo-fancontrol-gui"
+sed -i "s|main_script = os.path.join(script_dir, \"main.py\")|main_script = os.path.join(script_dir, \"pang11-fancontrol-main.py\")|" "$INSTALL_DIR/pang11-fancontrol-gui"
 
 # Make sure the installed script is executable
-chmod +x "$INSTALL_DIR/clevo-fancontrol-gui"
+chmod +x "$INSTALL_DIR/pang11-fancontrol-gui"
 
 # Install desktop entry
 echo "Installing desktop entry..."
-cp "$SCRIPT_DIR/clevo-fancontrol.desktop" "$DESKTOP_DIR/"
+cp "$SCRIPT_DIR/pang11-fancontrol.desktop" "$DESKTOP_DIR/"
 
 # Update icon cache
 echo "Updating icon cache..."
@@ -52,6 +52,6 @@ echo ""
 echo "Installation complete!"
 echo ""
 echo "The Pangolin 11 Fan Control application should now appear in your applications menu."
-echo "You can also run it from the command line with: clevo-fancontrol-gui"
+echo "You can also run it from the command line with: pang11-fancontrol-gui"
 echo ""
 echo "Note: The application will automatically request sudo privileges when launched."
