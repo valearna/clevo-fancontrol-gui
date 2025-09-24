@@ -16,6 +16,14 @@ DESKTOP_DIR="/usr/share/applications"
 
 echo "Installing Pangolin 11 Fan Control GUI..."
 
+# Install required Python packages
+echo "Installing Python dependencies..."
+# Try with --break-system-packages first (for newer systems), then fallback to regular install
+if ! pip3 install -r "$SCRIPT_DIR/requirements.txt" --break-system-packages 2>/dev/null; then
+    echo "Falling back to regular pip install..."
+    pip3 install -r "$SCRIPT_DIR/requirements.txt"
+fi
+
 # Create directories if they don't exist
 mkdir -p "$ICON_DIR"
 mkdir -p "$DESKTOP_DIR"
